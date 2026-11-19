@@ -1,0 +1,13 @@
+# Build artifacts & generated SysConfig files
+firmware/syscfg_gen/
+firmware/*.obj
+firmware/*.out
+firmware/*.map
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+
+# Local backups
+poc_testbed_backups/

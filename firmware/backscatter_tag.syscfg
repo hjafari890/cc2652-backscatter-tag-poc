@@ -1,0 +1,62 @@
+// @cliArgs --board /ti/boards/CC26X2R1_LAUNCHXL --rtos nortos
+/*
+ * backscatter_tag.syscfg
+ * Hardware configuration for LAUNCHXL-CC26X2R1 2.4 GHz Backscatter Tag PoC:
+ *   - DIO21 (BoosterPack Pin 8) : 200 kHz 50% Subcarrier PWM (GPTimer0A)
+ *   - DIO24 (BoosterPack Pin 6) : 20 kbps Mode 1 Baseband Data (GPIO High-Drive)
+ *   - DIO6 / DIO7               : Onboard Red / Green LEDs
+ *   - DIO13 / DIO14             : Onboard BTN-1 / BTN-2 (Active-Low w/ Pull-Up)
+ *   - DIO2 / DIO3               : XDS110 Backchannel UART (115200 8N1)
+ */
+
+var Power = scripting.addModule("/ti/drivers/Power");
+
+/* ======== Kernel Configuration ======== */
+system.getScript("kernel_config_release.syscfg.js");
+
+/* ======== PWM (200 kHz Subcarrier on DIO21) ======== */
+var PWM = scripting.addModule("/ti/drivers/PWM");
+var pwm0 = PWM.addInstance();
+pwm0.$name = "CONFIG_PWM_SUBCARRIER";
+pwm0.timerObject.$name = "CONFIG_GPTIMER_0";
+pwm0.timerObject.timer.$assign = "GPTM0";
+pwm0.timerObject.timer.pwmPin.$assign = "boosterpack.8"; /* DIO21 / IOID_21 */
+
+/* ======== GPIO (Data Output + Onboard LEDs & Buttons) ======== */
+var GPIO = scripting.addModule("/ti/drivers/GPIO");
+
+var gpioData = GPIO.addInstance();
+gpioData.$name = "CONFIG_GPIO_DATA";
+gpioData.mode = "Output";
+gpioData.outputType = "Standard";
+gpioData.outputStrength = "High";
+gpioData.initialOutputState = "Low";
+gpioData.pull = "None";
+gpioData.gpioPin.$assign = "boosterpack.6"; /* DIO24 / IOID_24 */
+
+var gpioLedRed = GPIO.addInstance();
+gpioLedRed.$hardware = system.deviceData.board.components.LED0;
+gpioLedRed.$name = "CONFIG_GPIO_LED_RED";
+
+var gpioLedGreen = GPIO.addInstance();
+gpioLedGreen.$hardware = system.deviceData.board.components.LED1;
+gpioLedGreen.$name = "CONFIG_GPIO_LED_GREEN";
+
+var gpioBtn1 = GPIO.addInstance();
+gpioBtn1.$hardware = system.deviceData.board.components.BUTTON0;
+gpioBtn1.$name = "CONFIG_GPIO_BTN1";
+gpioBtn1.pull = "Pull Up";
+
+var gpioBtn2 = GPIO.addInstance();
+gpioBtn2.$hardware = system.deviceData.board.components.BUTTON1;
+gpioBtn2.$name = "CONFIG_GPIO_BTN2";
+gpioBtn2.pull = "Pull Up";
+
+/* ======== UART2 (XDS110 Backchannel Control & Telemetry) ======== */
+var UART2 = scripting.addModule("/ti/drivers/UART2");
+var uart2 = UART2.addInstance();
+uart2.$hardware = system.deviceData.board.components.XDS110UART;
+uart2.$name = "CONFIG_UART2_0";
+uart2.enableNonblocking = true;
+uart2.rxRingBufferSize = 128;
+uart2.txRingBufferSize = 256;
